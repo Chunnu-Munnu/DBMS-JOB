@@ -5,142 +5,216 @@
 
 ## 1. ER Diagram
 
+### Overview — entities and relationships
+
 ```mermaid
 erDiagram
-    STATION ||--o{ ROUTE : "is a stop on"
-    STATION ||--o{ TRAIN : "originates/terminates"
-    STATION ||--o{ STAFF : "posted at"
-    TRAIN   ||--|{ ROUTE : "has ordered stops"
-    TRAIN   ||--|{ COACH : "is composed of"
-    TRAIN   ||--o{ SCHEDULE : "runs on date"
-    TRAVEL_CLASS ||--o{ COACH : "classifies"
-    COACH   ||--|{ SEAT : "contains"
-    SCHEDULE ||--|{ AVAILABILITY : "tracks"
-    TRAVEL_CLASS ||--o{ AVAILABILITY : "per class"
-    QUOTA   ||--o{ AVAILABILITY : "per quota"
-    USER_ACCOUNT ||--o{ BOOKING : "makes"
-    STAFF   ||--o{ BOOKING : "books at counter"
-    SCHEDULE ||--o{ BOOKING : "is booked on"
-    TRAVEL_CLASS ||--o{ BOOKING : "in class"
-    QUOTA   ||--o{ BOOKING : "under quota"
-    BOOKING ||--|{ TICKET_PASSENGER : "covers"
-    SEAT    ||--o| TICKET_PASSENGER : "allotted to"
-    BOOKING ||--o{ WAITLIST : "queued as"
-    TICKET_PASSENGER ||--o| WAITLIST : "holds position"
-    SCHEDULE ||--o{ WAITLIST : "queue for"
-    TRAVEL_CLASS ||--o{ FARE_RULE : "priced by"
-    QUOTA   ||--o{ FARE_RULE : "priced by"
-    BOOKING ||--|{ PAYMENT : "paid via"
-    BOOKING ||--o{ CANCELLATION : "cancelled by"
-    TICKET_PASSENGER ||--o| CANCELLATION : "partial cancel"
+    STATION          ||--o{ ROUTE            : "is a stop on"
+    STATION          ||--o{ TRAIN            : "originates / terminates"
+    STATION          ||--o{ STAFF            : "posted at"
+    TRAIN            ||--|{ ROUTE            : "has ordered stops"
+    TRAIN            ||--|{ COACH            : "is composed of"
+    TRAIN            ||--o{ SCHEDULE         : "runs on date"
+    TRAVEL_CLASS     ||--o{ COACH            : "classifies"
+    COACH            ||--|{ SEAT             : "contains"
+    SCHEDULE         ||--|{ AVAILABILITY     : "tracks"
+    TRAVEL_CLASS     ||--o{ AVAILABILITY     : "per class"
+    QUOTA            ||--o{ AVAILABILITY     : "per quota"
+    USER_ACCOUNT     ||--o{ BOOKING          : "makes"
+    STAFF            ||--o{ BOOKING          : "books at counter"
+    SCHEDULE         ||--o{ BOOKING          : "is booked on"
+    TRAVEL_CLASS     ||--o{ BOOKING          : "in class"
+    QUOTA            ||--o{ BOOKING          : "under quota"
+    BOOKING          ||--|{ TICKET_PASSENGER : "covers"
+    SEAT             ||--o| TICKET_PASSENGER : "allotted to"
+    SCHEDULE         ||--o{ WAITLIST         : "queue for"
+    BOOKING          ||--o{ WAITLIST         : "queued as"
+    TICKET_PASSENGER ||--o| WAITLIST         : "holds position"
+    TRAVEL_CLASS     ||--o{ FARE_RULE        : "priced by"
+    QUOTA            ||--o{ FARE_RULE        : "priced by"
+    BOOKING          ||--|{ PAYMENT          : "paid via"
+    BOOKING          ||--o{ CANCELLATION     : "cancelled by"
+    TICKET_PASSENGER ||--o| CANCELLATION     : "partial cancel"
+```
 
-    STATION { CHAR station_code PK
-              VARCHAR station_name
-              VARCHAR city
-              VARCHAR state
-              VARCHAR zone }
-    TRAIN   { CHAR train_no PK
-              VARCHAR train_name
-              ENUM train_type
-              CHAR source_code FK
-              CHAR dest_code FK
-              CHAR runs_on
-              INT total_distance }
-    ROUTE   { CHAR train_no PK_FK
-              SMALLINT seq_no PK
-              CHAR station_code FK
-              TIME arrival_time
-              TIME departure_time
-              INT dist_from_src
-              SMALLINT halt_minutes }
-    TRAVEL_CLASS { VARCHAR class_code PK
-              VARCHAR class_name
-              BOOL is_ac
-              BOOL has_berth }
-    QUOTA   { VARCHAR quota_code PK
-              VARCHAR quota_name
-              DECIMAL surcharge_pct }
-    COACH   { INT coach_id PK
-              CHAR train_no FK
-              VARCHAR coach_code
-              VARCHAR class_code FK
-              SMALLINT total_seats }
-    SEAT    { INT seat_id PK
-              INT coach_id FK
-              SMALLINT seat_no
-              ENUM berth_type }
-    SCHEDULE { INT schedule_id PK
-              CHAR train_no FK
-              DATE journey_date
-              ENUM run_status
-              BOOL chart_prepared }
-    AVAILABILITY { INT schedule_id PK_FK
-              VARCHAR class_code PK_FK
-              VARCHAR quota_code PK_FK
-              SMALLINT total_seats
-              SMALLINT seats_available
-              SMALLINT rac_available
-              SMALLINT waitlist_count }
-    USER_ACCOUNT { INT user_id PK
-              VARCHAR full_name
-              VARCHAR email
-              CHAR phone
-              CHAR password_hash }
-    STAFF   { INT staff_id PK
-              VARCHAR staff_name
-              ENUM role
-              CHAR station_code FK
-              CHAR phone }
-    BOOKING { CHAR pnr PK
-              INT user_id FK
-              INT schedule_id FK
-              CHAR from_station FK
-              CHAR to_station FK
-              VARCHAR class_code FK
-              VARCHAR quota_code FK
-              INT booked_by_staff FK
-              TIMESTAMP booking_ts
-              INT distance_km
-              DECIMAL total_fare
-              ENUM booking_status }
-    TICKET_PASSENGER { INT passenger_id PK
-              CHAR pnr FK
-              VARCHAR passenger_name
-              TINYINT age
-              ENUM gender
-              ENUM berth_pref
-              INT seat_id FK
-              ENUM current_status
-              SMALLINT status_number }
-    WAITLIST { INT waitlist_id PK
-              INT schedule_id FK
-              VARCHAR class_code FK
-              VARCHAR quota_code FK
-              CHAR pnr FK
-              INT passenger_id FK
-              ENUM queue_type
-              SMALLINT position
-              BOOL is_active }
-    FARE_RULE { INT rule_id PK
-              VARCHAR class_code FK
-              VARCHAR quota_code FK
-              ENUM train_type
-              DECIMAL base_fare
-              DECIMAL rate_per_km
-              DECIMAL reservation_chg
-              DATE effective_from }
-    PAYMENT { INT payment_id PK
-              CHAR pnr FK
-              DECIMAL amount
-              ENUM mode
-              VARCHAR txn_ref
-              ENUM pay_status }
-    CANCELLATION { INT cancel_id PK
-              CHAR pnr FK
-              INT passenger_id FK
-              TIMESTAMP cancelled_at
-              DECIMAL cancellation_chg
-              DECIMAL refund_amount }
+### Full ER diagram with attributes
+
+```mermaid
+erDiagram
+    STATION          ||--o{ ROUTE            : "is a stop on"
+    STATION          ||--o{ TRAIN            : "originates / terminates"
+    STATION          ||--o{ STAFF            : "posted at"
+    TRAIN            ||--|{ ROUTE            : "has ordered stops"
+    TRAIN            ||--|{ COACH            : "is composed of"
+    TRAIN            ||--o{ SCHEDULE         : "runs on date"
+    TRAVEL_CLASS     ||--o{ COACH            : "classifies"
+    COACH            ||--|{ SEAT             : "contains"
+    SCHEDULE         ||--|{ AVAILABILITY     : "tracks"
+    TRAVEL_CLASS     ||--o{ AVAILABILITY     : "per class"
+    QUOTA            ||--o{ AVAILABILITY     : "per quota"
+    USER_ACCOUNT     ||--o{ BOOKING          : "makes"
+    STAFF            ||--o{ BOOKING          : "books at counter"
+    SCHEDULE         ||--o{ BOOKING          : "is booked on"
+    TRAVEL_CLASS     ||--o{ BOOKING          : "in class"
+    QUOTA            ||--o{ BOOKING          : "under quota"
+    BOOKING          ||--|{ TICKET_PASSENGER : "covers"
+    SEAT             ||--o| TICKET_PASSENGER : "allotted to"
+    SCHEDULE         ||--o{ WAITLIST         : "queue for"
+    BOOKING          ||--o{ WAITLIST         : "queued as"
+    TICKET_PASSENGER ||--o| WAITLIST         : "holds position"
+    TRAVEL_CLASS     ||--o{ FARE_RULE        : "priced by"
+    QUOTA            ||--o{ FARE_RULE        : "priced by"
+    BOOKING          ||--|{ PAYMENT          : "paid via"
+    BOOKING          ||--o{ CANCELLATION     : "cancelled by"
+    TICKET_PASSENGER ||--o| CANCELLATION     : "partial cancel"
+
+    STATION {
+        CHAR station_code PK
+        VARCHAR station_name
+        VARCHAR city
+        VARCHAR state
+        VARCHAR zone
+    }
+    TRAIN {
+        CHAR train_no PK
+        VARCHAR train_name
+        ENUM train_type
+        CHAR source_code FK "role: source"
+        CHAR dest_code FK "role: destination"
+        CHAR runs_on "Mon-Sun Y/N flags"
+        INT total_distance
+    }
+    ROUTE {
+        CHAR train_no PK, FK
+        SMALLINT seq_no PK "stop order"
+        CHAR station_code FK
+        TIME arrival_time "NULL at origin"
+        TIME departure_time "NULL at terminus"
+        TINYINT day_offset
+        INT dist_from_src
+        SMALLINT halt_minutes
+    }
+    TRAVEL_CLASS {
+        VARCHAR class_code PK
+        VARCHAR class_name
+        BOOLEAN is_ac
+        BOOLEAN has_berth
+    }
+    QUOTA {
+        VARCHAR quota_code PK
+        VARCHAR quota_name
+        DECIMAL surcharge_pct
+    }
+    COACH {
+        INT coach_id PK
+        CHAR train_no FK
+        VARCHAR coach_code "B1, A2, S4"
+        VARCHAR class_code FK
+        SMALLINT total_seats
+    }
+    SEAT {
+        INT seat_id PK
+        INT coach_id FK
+        SMALLINT seat_no
+        ENUM berth_type
+    }
+    SCHEDULE {
+        INT schedule_id PK
+        CHAR train_no FK
+        DATE journey_date
+        ENUM run_status
+        BOOLEAN chart_prepared
+    }
+    AVAILABILITY {
+        INT schedule_id PK, FK
+        VARCHAR class_code PK, FK
+        VARCHAR quota_code PK, FK
+        SMALLINT total_seats
+        SMALLINT seats_available
+        SMALLINT rac_available
+        SMALLINT waitlist_count
+    }
+    USER_ACCOUNT {
+        INT user_id PK
+        VARCHAR full_name
+        VARCHAR email UK
+        CHAR phone UK
+        CHAR password_hash
+        TIMESTAMP created_at
+    }
+    STAFF {
+        INT staff_id PK
+        VARCHAR staff_name
+        ENUM role "CLERK, TTE, ADMIN"
+        CHAR station_code FK
+        CHAR phone UK
+    }
+    BOOKING {
+        CHAR pnr PK "10 digits"
+        INT user_id FK
+        INT schedule_id FK
+        CHAR from_station FK "role: from"
+        CHAR to_station FK "role: to"
+        VARCHAR class_code FK
+        VARCHAR quota_code FK
+        INT booked_by_staff FK "NULL if online"
+        TIMESTAMP booking_ts
+        INT distance_km
+        DECIMAL total_fare "snapshot"
+        ENUM booking_status
+    }
+    TICKET_PASSENGER {
+        INT passenger_id PK
+        CHAR pnr FK
+        VARCHAR passenger_name
+        TINYINT age
+        ENUM gender
+        ENUM berth_pref
+        INT seat_id FK "NULL until allotted"
+        ENUM current_status "CNF, RAC, WL, CAN"
+        SMALLINT status_number
+    }
+    WAITLIST {
+        INT waitlist_id PK
+        INT schedule_id FK
+        VARCHAR class_code FK
+        VARCHAR quota_code FK
+        CHAR pnr FK
+        INT passenger_id FK
+        ENUM queue_type "RAC or WL"
+        SMALLINT position
+        TIMESTAMP enqueued_at
+        BOOLEAN is_active
+    }
+    FARE_RULE {
+        INT rule_id PK
+        VARCHAR class_code FK
+        VARCHAR quota_code FK
+        ENUM train_type
+        DECIMAL base_fare
+        DECIMAL rate_per_km
+        DECIMAL reservation_chg
+        DATE effective_from
+        DATE effective_to
+    }
+    PAYMENT {
+        INT payment_id PK
+        CHAR pnr FK
+        DECIMAL amount
+        ENUM mode
+        VARCHAR txn_ref UK
+        ENUM pay_status
+        TIMESTAMP paid_at
+    }
+    CANCELLATION {
+        INT cancel_id PK
+        CHAR pnr FK
+        INT passenger_id FK "NULL if full PNR"
+        TIMESTAMP cancelled_at
+        DECIMAL cancellation_chg
+        DECIMAL refund_amount
+        VARCHAR reason
+    }
 ```
 
 ### ER design notes
