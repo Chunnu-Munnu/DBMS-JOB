@@ -532,6 +532,8 @@ It is documented here rather than silently omitted.
 
 | Name | Roll No. |
 |---|---|
-| Amogh Sharma | — |
+| Aariz Qureshi | PES1UG24CS008 |
+|---|---|
+| Amogh Sharma | PES1UG24CS053|
 
 *DBMS Mini Project · PES University*
