@@ -1,4 +1,4 @@
-"""Execute ddl_sqlite.sql, then verify the schema was created correctly."""
+"""Execute schema_sqlite.sql, then verify the schema was created correctly."""
 import os
 import sqlite3
 
@@ -8,7 +8,7 @@ DB = os.path.join(BASE, "railway.db")
 if os.path.exists(DB):
     os.remove(DB)
 
-with open(os.path.join(BASE, "ddl_sqlite.sql"), encoding="utf-8") as f:
+with open(os.path.join(BASE, "schema_sqlite.sql"), encoding="utf-8") as f:
     ddl = f.read()
 
 con = sqlite3.connect(DB)

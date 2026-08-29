@@ -282,8 +282,8 @@ Primary keys are **underlined** (shown here in **bold**); foreign keys are marke
 
 ## 3. DDL
 
-- `ddl_mysql.sql` — the submission DDL, MySQL 8.0 / InnoDB.
-- `ddl_sqlite.sql` — an equivalent port used to execute and verify the schema locally.
+- `database/schema.sql` — the submission DDL, MySQL 8.0 / InnoDB.
+- `database/schema_sqlite.sql` — an equivalent port used to execute and verify the schema locally.
 
 Includes 17 tables, 33 foreign keys, 8 secondary indexes, and CHECK constraints covering
 station-pair validity, distance/fare positivity, seat and waitlist bounds, PNR/phone/email formats,
@@ -293,7 +293,7 @@ and enumerated status domains.
 
 ## 4. Execution Result
 
-`python run_ddl.py` builds `railway.db` from the DDL and verifies it.
+`python database/verify_schema.py` builds `railway.db` from the DDL and verifies it.
 
 ```
 TABLES CREATED: 17          EXPLICIT INDEXES: 8

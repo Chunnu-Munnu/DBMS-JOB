@@ -1,0 +1,7 @@
+# Language detection on GitHub
+*.sql   linguist-language=SQL
+*.mmd   linguist-language=Mermaid
+*.py    linguist-language=Python
+
+# Generated documents — never diffed as text
+*.pdf   binary -diff
