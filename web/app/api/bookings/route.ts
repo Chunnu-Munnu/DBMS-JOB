@@ -2,22 +2,22 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { callProc, query } from "@/lib/db";
 import { ApiError, route } from "@/lib/errors";
+import { invalidateSchedule, syncQueue, withBookingLock } from "@/lib/redis";
 
-// The logged-in passenger's bookings, newest first.
+// The logged-in passenger's bookings and cancellations in the last year.
 export const GET = route(async () => {
   const session = await requireRole("PASSENGER");
   const rows = await query(
-    `SELECT b.pnr, b.booking_status, b.total_fare, b.class_code, b.booking_ts,
-            s.journey_date, t.train_no, t.train_name, b.from_station, b.to_station,
-            COUNT(tp.passenger_id) AS passengers
-       FROM BOOKING b
+    `SELECT h.*, COUNT(tp.passenger_id) AS passengers, b.class_code, s.train_no
+       FROM v_passenger_history h
+       JOIN BOOKING b ON b.pnr = h.pnr
        JOIN SCHEDULE s ON s.schedule_id = b.schedule_id
-       JOIN TRAIN t ON t.train_no = s.train_no
-       JOIN TICKET_PASSENGER tp ON tp.pnr = b.pnr
-      WHERE b.user_id = ?
-      GROUP BY b.pnr, b.booking_status, b.total_fare, b.class_code, b.booking_ts,
-               s.journey_date, t.train_no, t.train_name, b.from_station, b.to_station
-      ORDER BY b.booking_ts DESC
+       JOIN TICKET_PASSENGER tp ON tp.pnr = h.pnr
+      WHERE h.user_id = ? AND h.booking_ts >= NOW() - INTERVAL 1 YEAR
+      GROUP BY h.pnr, h.user_id, h.booking_ts, h.booking_status, h.total_fare, h.journey_date,
+               h.train_name, h.from_station, h.to_station, h.refunded, h.last_cancelled_at,
+               b.class_code, s.train_no
+      ORDER BY h.booking_ts DESC
       LIMIT 50`,
     [session.id],
   );
@@ -47,9 +47,16 @@ export const POST = route(async (req) => {
     staffId = session.id;
   }
 
-  const sets = await callProc("sp_book_ticket", [
-    userId, scheduleId, from, to, classCode, quotaCode, staffId,
-    mode ?? (staffId ? "CASH" : "UPI"), JSON.stringify(passengers),
-  ]);
+  const sets = await withBookingLock(scheduleId, classCode, () =>
+    callProc("sp_book_ticket", [
+      userId, scheduleId, from, to, classCode, quotaCode, staffId,
+      mode ?? (staffId ? "CASH" : "UPI"), JSON.stringify(passengers),
+    ]),
+  );
+
+  // MySQL has committed. Only now is Redis brought in line.
+  await invalidateSchedule(scheduleId);
+  await syncQueue(scheduleId, classCode, quotaCode);
+
   return NextResponse.json(sets[sets.length - 1][0], { status: 201 });
 });

@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 
 type Row = {
   pnr: string; booking_status: string; total_fare: number; class_code: string; journey_date: string;
-  train_no: string; train_name: string; from_station: string; to_station: string; passengers: number;
+  train_no: string; train_name: string; from_station: string; to_station: string; passengers: number; refunded: number;
 };
 
 export default function MyBookings() {
@@ -24,7 +24,7 @@ export default function MyBookings() {
       {rows && rows.length > 0 && (
         <div className="card scroll">
           <table>
-            <thead><tr><th>PNR</th><th>Train</th><th>Journey</th><th>Date</th><th>Pax</th><th>Fare</th><th>Status</th></tr></thead>
+            <thead><tr><th>PNR</th><th>Train</th><th>Journey</th><th>Date</th><th>Pax</th><th>Fare</th><th>Refunded</th><th>Status</th></tr></thead>
             <tbody>
               {rows.map((b) => (
                 <tr key={b.pnr}>
@@ -34,6 +34,7 @@ export default function MyBookings() {
                   <td>{b.journey_date}</td>
                   <td>{b.passengers}</td>
                   <td>₹{b.total_fare}</td>
+                  <td>{b.refunded > 0 ? `₹${b.refunded}` : "-"}</td>
                   <td><span className={`badge ${b.booking_status}`}>{b.booking_status}</span></td>
                 </tr>
               ))}

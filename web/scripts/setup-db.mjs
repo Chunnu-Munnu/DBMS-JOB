@@ -2,6 +2,7 @@
 // least-privilege application user. Needs an admin login in .env.local.
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import Redis from "ioredis";
 import mysql from "mysql2/promise";
 
 const dir = path.resolve(import.meta.dirname, "../../database");
@@ -69,3 +70,21 @@ const [[counts]] = await conn.query(
 );
 console.log(counts);
 await conn.end();
+
+// Redis only holds copies of MySQL data, so copies of the old database must go too.
+// Only this project's key prefixes are removed; the rest of the server is left alone.
+if (env.REDIS_URL) {
+  const redis = new Redis(env.REDIS_URL, { lazyConnect: true, maxRetriesPerRequest: 1, retryStrategy: () => null });
+  redis.on("error", () => {});
+  try {
+    await redis.connect();
+    for (const prefix of ["search", "sched", "lock", "queue", "trending", "login"]) {
+      const keys = await redis.keys(`${prefix}:*`);
+      if (keys.length) await redis.del(...keys);
+    }
+    console.log("Redis keys cleared");
+  } catch {
+    console.log("Redis not reachable, skipped");
+  }
+  redis.disconnect();
+}

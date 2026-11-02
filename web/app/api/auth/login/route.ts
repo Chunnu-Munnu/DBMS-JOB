@@ -3,12 +3,14 @@ import { NextResponse } from "next/server";
 import { startSession, type Role } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { ApiError, route } from "@/lib/errors";
+import { clearFailedLogins, loginBlocked, recordFailedLogin } from "@/lib/redis";
 
 type Account = { id: number; name: string; email: string; password_hash: string; role: Role };
 
 export const POST = route(async (req) => {
   const { email, password } = await req.json();
   if (!email || !password) throw new ApiError(400, "Email and password are required");
+  if (await loginBlocked(email)) throw new ApiError(429, "Too many failed attempts. Try again in 15 minutes.");
 
   // UNION: passengers and staff live in separate tables but share one login form.
   const rows = await query<Account>(
@@ -22,8 +24,10 @@ export const POST = route(async (req) => {
   const account = rows[0];
   // Same message either way, so the form does not reveal which emails exist.
   if (!account || !(await bcrypt.compare(password, account.password_hash))) {
+    await recordFailedLogin(email);
     throw new ApiError(401, "Wrong email or password");
   }
+  await clearFailedLogins(email);
   const user = { id: account.id, name: account.name, email: account.email, role: account.role };
   await startSession(user);
   return NextResponse.json(user);
