@@ -28,9 +28,9 @@ CREATE TABLE TRAIN (
     runs_on         CHAR(7)     NOT NULL DEFAULT 'YYYYYYY',   -- Mon..Sun flags
     total_distance  INT         NOT NULL,
     CONSTRAINT fk_train_src  FOREIGN KEY (source_code) REFERENCES STATION(station_code)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT fk_train_dest FOREIGN KEY (dest_code)   REFERENCES STATION(station_code)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT chk_train_ends CHECK (source_code <> dest_code),
     CONSTRAINT chk_train_dist CHECK (total_distance > 0),
     CONSTRAINT chk_runs_on    CHECK (runs_on REGEXP '^[YN]{7}$')
@@ -175,9 +175,9 @@ CREATE TABLE BOOKING (
     CONSTRAINT fk_bk_sched  FOREIGN KEY (schedule_id)  REFERENCES SCHEDULE(schedule_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_bk_from   FOREIGN KEY (from_station) REFERENCES STATION(station_code)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT fk_bk_to     FOREIGN KEY (to_station)   REFERENCES STATION(station_code)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT fk_bk_class  FOREIGN KEY (class_code)   REFERENCES TRAVEL_CLASS(class_code)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_bk_quota  FOREIGN KEY (quota_code)   REFERENCES QUOTA(quota_code)
@@ -204,7 +204,7 @@ CREATE TABLE TICKET_PASSENGER (
     CONSTRAINT fk_tp_pnr  FOREIGN KEY (pnr)     REFERENCES BOOKING(pnr)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_tp_seat FOREIGN KEY (seat_id) REFERENCES SEAT(seat_id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT uq_tp_name UNIQUE (pnr, passenger_name),
     CONSTRAINT chk_tp_age CHECK (age BETWEEN 0 AND 120),
     CONSTRAINT chk_tp_status CHECK (
