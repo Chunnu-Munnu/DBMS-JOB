@@ -26,6 +26,8 @@ export default function Nav() {
       <Link href="/"><strong>Railway Reservation</strong></Link>
       <Link href="/pnr">PNR status</Link>
       {user?.role === "PASSENGER" && <Link href="/my-bookings">My bookings</Link>}
+      {user?.role === "ADMIN" && <Link href="/admin">Dashboard</Link>}
+      {(user?.role === "TTE" || user?.role === "ADMIN") && <Link href="/tte">Examiner chart</Link>}
       <span className="grow" />
       {user ? (
         <>
