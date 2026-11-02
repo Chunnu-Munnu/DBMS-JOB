@@ -1,0 +1,76 @@
+
+--- Database constraints ---
+PASS  duplicate primary key
+PASS  train source equals destination
+PASS  foreign key to unknown station
+PASS  malformed runs_on
+PASS  bad phone number
+PASS  email without @
+PASS  availability above capacity
+PASS  availability below zero
+PASS  confirmed passenger without a seat
+
+--- Triggers ---
+PASS  same seat twice on one schedule
+PASS  station order reversed on a direct insert
+
+--- Search and roles ---
+PASS  SBC to NDLS finds 12627
+PASS  SBC to NDLS excludes the reverse train 12628
+PASS  segment distance is 570 km, boarding a day after origin
+PASS  wrong password rejected
+PASS  booking without login is 401
+PASS  TTE role cannot book (403)
+PASS  clerk counter booking records the staff id
+
+--- Input validation through the API ---
+PASS  seven passengers rejected
+PASS  duplicate passenger name is 409 and rolled back
+PASS  failed booking left availability untouched
+PASS  impossible age rejected
+PASS  wrong direction rejected
+
+--- Concurrency: 30 simultaneous bookings for 5 seats and 2 RAC ---
+PASS  all 30 requests succeeded
+PASS  exactly 5 confirmed
+PASS  5 distinct seats, no double allotment
+PASS  exactly 2 RAC
+PASS  the other 23 are waitlisted
+
+--- Cancellation and promotion ---
+PASS  another passenger cannot cancel this ticket
+PASS  cancel succeeded
+PASS  refund is 90% more than 48 hours out
+PASS  earliest RAC became confirmed with a seat
+PASS  earliest WL became RAC
+PASS  promotions were reported back
+PASS  availability still consistent
+PASS  second cancel of the same ticket rejected
+PASS  trigger wrote the status history
+
+--- Redis ---
+PASS  health reports MySQL up
+PASS  repeat search is served from cache
+PASS  booking invalidates the cached search
+PASS  live RAC rank from the sorted set: behind the older RAC
+PASS  sixth login attempt is throttled
+
+--- Admin ---
+PASS  passenger cannot open the reports (403)
+PASS  reports return occupancy and revenue
+PASS  net revenue matches the payment ledger
+PASS  new fare rule accepted
+PASS  old rule was closed, not overwritten
+PASS  run with bookings cannot be deleted
+PASS  empty run can be deleted
+PASS  ON DELETE CASCADE removed its availability
+PASS  TTE sees the chart
+PASS  passenger cannot see the chart
+PASS  full-text search finds Bengaluru stations
+
+--- Least privilege: the app's own database account ---
+PASS  app user blocked: UPDATE AVAILABILITY SET seats_available = 0
+PASS  app user blocked: DELETE FROM BOOKING
+PASS  app user blocked: DROP TABLE PAYMENT
+
+56 passed, 0 failed
