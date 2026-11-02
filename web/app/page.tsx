@@ -16,10 +16,21 @@ export default function SearchPage() {
   const [date, setDate] = useState(tomorrow());
   const [results, setResults] = useState<TrainResult[] | null>(null);
   const [error, setError] = useState("");
+  const [finder, setFinder] = useState("");
+  const [matches, setMatches] = useState<Station[]>([]);
 
   useEffect(() => {
     api<Station[]>("/api/stations").then(setStations).catch((e) => setError(e.message));
   }, []);
+
+  // Full-text station search once three characters are typed.
+  useEffect(() => {
+    if (finder.trim().length < 3) {
+      setMatches([]);
+      return;
+    }
+    api<Station[]>(`/api/stations?q=${encodeURIComponent(finder)}`).then(setMatches).catch(() => setMatches([]));
+  }, [finder]);
 
   async function search(e: FormEvent) {
     e.preventDefault();
@@ -52,6 +63,18 @@ export default function SearchPage() {
         </label>
         <button type="submit">Search</button>
       </form>
+      <div className="card">
+        <label>Search stations by name or city
+          <input value={finder} onChange={(e) => setFinder(e.target.value)} placeholder="e.g. beng, junction, delhi" />
+        </label>
+        {matches.map((m) => (
+          <p key={m.station_code} style={{ margin: "8px 0 0" }}>
+            {m.station_name} ({m.station_code}){" "}
+            <button type="button" className="secondary" onClick={() => setFrom(m.station_code)}>Set as From</button>{" "}
+            <button type="button" className="secondary" onClick={() => setTo(m.station_code)}>Set as To</button>
+          </p>
+        ))}
+      </div>
       {error && <p className="error">{error}</p>}
       {results?.length === 0 && (
         <p className="card">No train runs from {from} to {to} in that direction on this date.</p>
