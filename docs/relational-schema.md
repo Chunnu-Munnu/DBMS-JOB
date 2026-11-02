@@ -35,6 +35,7 @@ erDiagram
     BOOKING          ||--|{ PAYMENT          : "paid via"
     BOOKING          ||--o{ CANCELLATION     : "cancelled by"
     TICKET_PASSENGER ||--o| CANCELLATION     : "partial cancel"
+    TICKET_PASSENGER ||--o{ TICKET_STATUS_HISTORY : "audited by"
 ```
 
 ### Full ER diagram with attributes
@@ -67,6 +68,7 @@ erDiagram
     BOOKING          ||--|{ PAYMENT          : "paid via"
     BOOKING          ||--o{ CANCELLATION     : "cancelled by"
     TICKET_PASSENGER ||--o| CANCELLATION     : "partial cancel"
+    TICKET_PASSENGER ||--o{ TICKET_STATUS_HISTORY : "audited by"
 
     STATION {
         CHAR station_code PK
@@ -145,9 +147,11 @@ erDiagram
     STAFF {
         INT staff_id PK
         VARCHAR staff_name
+        VARCHAR email UK
         ENUM role "CLERK, TTE, ADMIN"
         CHAR station_code FK
         CHAR phone UK
+        CHAR password_hash
     }
     BOOKING {
         CHAR pnr PK "10 digits"
@@ -215,6 +219,15 @@ erDiagram
         DECIMAL refund_amount
         VARCHAR reason
     }
+    TICKET_STATUS_HISTORY {
+        BIGINT history_id PK
+        INT passenger_id FK
+        CHAR pnr FK
+        ENUM old_status "NULL on first insert"
+        ENUM new_status
+        INT seat_id
+        TIMESTAMP changed_at
+    }
 ```
 
 ### ER design notes
@@ -254,7 +267,7 @@ Primary keys are **underlined** (shown here in **bold**); foreign keys are marke
 
 10. **USER_ACCOUNT**(**user_id**, full_name, email, phone, password_hash, created_at)
 
-11. **STAFF**(**staff_id**, staff_name, role, station_code *(FK → STATION)*, phone)
+11. **STAFF**(**staff_id**, staff_name, email, role, station_code *(FK → STATION)*, phone, password_hash)
 
 12. **BOOKING**(**pnr**, user_id *(FK → USER_ACCOUNT)*, schedule_id *(FK → SCHEDULE)*, from_station *(FK → STATION)*, to_station *(FK → STATION)*, class_code *(FK → TRAVEL_CLASS)*, quota_code *(FK → QUOTA)*, booked_by_staff *(FK → STAFF)*, booking_ts, distance_km, total_fare, booking_status)
 
@@ -267,6 +280,8 @@ Primary keys are **underlined** (shown here in **bold**); foreign keys are marke
 16. **PAYMENT**(**payment_id**, pnr *(FK → BOOKING)*, amount, mode, txn_ref, pay_status, paid_at)
 
 17. **CANCELLATION**(**cancel_id**, pnr *(FK → BOOKING)*, passenger_id *(FK → TICKET_PASSENGER)*, cancelled_at, cancellation_chg, refund_amount, reason)
+
+18. **TICKET_STATUS_HISTORY**(**history_id**, passenger_id *(FK → TICKET_PASSENGER)*, pnr *(FK → BOOKING)*, old_status, new_status, seat_id, changed_at)
 
 ### ER → Relational mapping rules applied
 
@@ -282,56 +297,7 @@ Primary keys are **underlined** (shown here in **bold**); foreign keys are marke
 
 ## 3. DDL
 
-- `database/schema.sql` — the submission DDL, MySQL 8.0 / InnoDB.
-- `database/schema_sqlite.sql` — an equivalent port used to execute and verify the schema locally.
+`database/01_schema.sql` creates the 17 base tables on MySQL 8.0 / InnoDB, and
+`database/02_alter_auth_audit.sql` evolves the schema with staff login columns and the audit table.
 
-Includes 17 tables, 33 foreign keys, 8 secondary indexes, and CHECK constraints covering
-station-pair validity, distance/fare positivity, seat and waitlist bounds, PNR/phone/email formats,
-and enumerated status domains.
-
----
-
-## 4. Execution Result
-
-`python database/verify_schema.py` builds `railway.db` from the DDL and verifies it.
-
-```
-TABLES CREATED: 17          EXPLICIT INDEXES: 8
-fk_check  : PASS (no violations)
-integrity : ok
-
-CONSTRAINT SMOKE TEST
-  duplicate station PK                   rejected: UNIQUE constraint failed: STATION.station_code
-  train with source = destination        rejected: CHECK constraint failed: chk_train_ends
-  train referencing unknown station      rejected: FOREIGN KEY constraint failed
-  invalid train_type value               rejected: CHECK constraint failed: chk_train_type
-  negative total_distance                rejected: CHECK constraint failed: chk_train_dist
-  malformed runs_on flags                rejected: CHECK constraint failed: chk_runs_on
-  bad phone format on USER_ACCOUNT       rejected: CHECK constraint failed: chk_user_phone
-  email without @                        rejected: CHECK constraint failed: chk_user_email
-  two stops at same seq_no               rejected: UNIQUE constraint failed: ROUTE.train_no, seq_no
-```
-
-Per-table column and FK counts:
-
-| Table | Cols | FKs | | Table | Cols | FKs |
-|---|---|---|---|---|---|---|
-| STATION | 5 | 0 | | BOOKING | 12 | 7 |
-| TRAIN | 7 | 2 | | TICKET_PASSENGER | 9 | 2 |
-| ROUTE | 8 | 2 | | WAITLIST | 10 | 5 |
-| TRAVEL_CLASS | 4 | 0 | | FARE_RULE | 9 | 2 |
-| QUOTA | 3 | 0 | | PAYMENT | 7 | 1 |
-| COACH | 5 | 2 | | CANCELLATION | 7 | 2 |
-| SEAT | 4 | 1 | | STAFF | 5 | 1 |
-| SCHEDULE | 5 | 1 | | USER_ACCOUNT | 6 | 0 |
-| AVAILABILITY | 7 | 3 | | | | |
-
----
-
-## 5. Known limitation
-
-One integrity rule is **not** expressible as a table constraint: *the same physical seat must not be
-allotted twice on the same schedule*. `TICKET_PASSENGER` holds `seat_id` but not `schedule_id`
-(it reaches the schedule through `BOOKING`), so a simple `UNIQUE` cannot express it. This will be
-enforced in the DML phase by a `BEFORE INSERT` trigger on `TICKET_PASSENGER`, together with the
-Redis seat-lock during the booking window.
+Totals: 18 tables, 33 foreign keys, 26 CHECK, 16 UNIQUE and 9 secondary indexes.

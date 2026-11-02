@@ -112,7 +112,7 @@ MAPPING = [
      "TICKET_PASSENGER.seat_id, BOOKING.booked_by_staff, CANCELLATION.passenger_id",
      "NULL until allotment, NULL for online bookings, NULL when the whole PNR is cancelled."),
     ("Normalization",
-     "All 17 relations",
+     "All 18 relations",
      "In 3NF / BCNF. BOOKING.distance_km and total_fare are deliberate point-in-time "
      "snapshots, not transitive dependencies."),
 ]

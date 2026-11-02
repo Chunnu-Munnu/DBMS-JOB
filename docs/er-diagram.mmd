@@ -25,6 +25,7 @@ erDiagram
     BOOKING          ||--|{ PAYMENT          : "paid via"
     BOOKING          ||--o{ CANCELLATION     : "cancelled by"
     TICKET_PASSENGER ||--o| CANCELLATION     : "partial cancel"
+    TICKET_PASSENGER ||--o{ TICKET_STATUS_HISTORY : "audited by"
 
     STATION {
         CHAR station_code PK
@@ -103,9 +104,11 @@ erDiagram
     STAFF {
         INT staff_id PK
         VARCHAR staff_name
+        VARCHAR email UK
         ENUM role "CLERK, TTE, ADMIN"
         CHAR station_code FK
         CHAR phone UK
+        CHAR password_hash
     }
     BOOKING {
         CHAR pnr PK "10 digits"
@@ -172,4 +175,13 @@ erDiagram
         DECIMAL cancellation_chg
         DECIMAL refund_amount
         VARCHAR reason
+    }
+    TICKET_STATUS_HISTORY {
+        BIGINT history_id PK
+        INT passenger_id FK
+        CHAR pnr FK
+        ENUM old_status "NULL on first insert"
+        ENUM new_status
+        INT seat_id
+        TIMESTAMP changed_at
     }
