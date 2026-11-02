@@ -80,7 +80,7 @@ export default function PnrPage() {
                 <td>{p.age}</td>
                 <td><span className={`badge ${p.current_status}`}>{p.current_status}</span></td>
                 <td>{p.seat_no ? `${p.coach_code}/${p.seat_no} ${p.berth_type}` : "-"}</td>
-                <td>{p.current_position ? `${p.current_status} ${p.current_position} (booked as ${p.booking_position})` : "-"}</td>
+                <td>{p.current_position ? `${p.current_status} ${p.current_position} (queue no. ${p.booking_position})` : "-"}</td>
                 <td>{data.canCancel && p.current_status !== "CAN" && (
                   <button className="secondary" disabled={busy} onClick={() => cancel(p.passenger_id)}>Cancel</button>
                 )}</td>
