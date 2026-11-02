@@ -404,8 +404,12 @@ Scripts in `database/` run in filename order:
 | `04_triggers.sql` | Seat guard, station order, refund cap, status history |
 | `05_view_pnr.sql` | `v_pnr_status` |
 | `06_seed.sql` | Demo stations, trains, routes, seats, fares, accounts, past bookings |
+| `07_views_analytics.sql` | `v_occupancy`, `v_revenue`, `v_passenger_history`; `sp_set_fare`, `sp_delete_schedule` |
+| `08_fulltext.sql` | Full-text index on stations |
+| `queries.sql` | The six key queries and SQL feature examples (run by hand) |
+| `alter_drop_demo.sql` | ALTER, TRUNCATE and DROP on a scratch table (run by hand) |
 
-**Totals:** 18 tables · 33 foreign keys · 26 CHECK · 16 UNIQUE · 9 secondary indexes · 6 triggers.
+**Totals:** 18 tables · 33 foreign keys · 26 CHECK · 16 UNIQUE · 10 secondary indexes (one full-text) · 6 triggers · 4 views.
 
 | Rule | Enforced by |
 |---|---|
@@ -423,7 +427,8 @@ Concurrency: `sp_book_ticket` and `sp_cancel_ticket` run in one transaction and 
 
 ## 9. How to Run
 
-Needs Node 20+ and MySQL 8.
+Needs Node 20+ and MySQL 8. Redis is optional: without it the app runs on MySQL alone.
+On Windows, Redis can run under WSL with `redis-server --bind 127.0.0.1`.
 
 ```bash
 cd web
@@ -431,6 +436,15 @@ npm install
 cp .env.example .env.local      # then fill in the values
 npm run db:setup                # DROPS and rebuilds railway_db
 npm run dev
+```
+
+To run the test cases, reseed and start the app, then run them from a second terminal:
+
+```bash
+npm run db:setup
+npm run build
+npm start
+npm test
 ```
 
 Open http://localhost:3000. Every seeded account uses the password `Demo@1234`:
@@ -453,17 +467,22 @@ Open http://localhost:3000. Every seeded account uses the password `Demo@1234`:
 | `GET`, `POST /api/bookings` | Passenger; clerk, admin | History; book |
 | `POST /api/bookings/{pnr}/cancel` | Owner, clerk, admin | Cancel and promote |
 | `GET /api/pnr/{pnr}` | Anyone | PNR status and history |
-| `GET /api/health` | Anyone | Database status |
+| `GET /api/health` | Anyone | MySQL and Redis status |
+| `GET /api/admin/reports` | Admin | Occupancy, revenue, top routes, Redis status |
+| `GET`, `POST`, `DELETE /api/admin/schedules` | Admin | Open or withdraw a run |
+| `GET`, `POST /api/admin/fares` | Admin | Time-versioned fare rules |
+| `POST /api/admin/redis` | Admin | Rebuild live queues from MySQL |
+| `GET /api/tte/chart?train&date` | Examiner, admin | Passenger chart |
 
 ## 11. Repository Structure
 
 ```
 database/        SQL scripts, run in filename order
-docs/            ER diagram, relational schema, PDF generator
+docs/            Project report, ER diagram, relational schema, screenshots, test results
 web/
   app/           Next.js pages; app/api/ holds the route handlers
   components/    Shared UI
-  lib/           db pool, error mapping, auth, search query
+  lib/           db pool, Redis layer, error mapping, auth, search query
   scripts/       setup-db.mjs builds the database
   tests/         End-to-end test cases
 ```
@@ -475,6 +494,13 @@ web/
 | Primary DB | MySQL 8.0 (InnoDB) | Highly relational data; needs foreign keys and transactions for booking atomicity |
 | Secondary DB | Redis | Availability is the hottest read and changes constantly; suits a key-value store |
 | Web and API | Next.js 15 route handlers | One codebase for UI and backend, as the brief suggests |
+
+MySQL is the source of truth; Redis holds only what can be rebuilt from it. It serves a cache-aside
+availability cache, a `SET NX` booking lock, sorted-set live queues (`ZRANK`), trending routes
+(`ZINCRBY`) and a login throttle (`INCR`). Overbooking is prevented by `SELECT ... FOR UPDATE` in
+MySQL, not by the Redis lock, so losing Redis cannot cause a double booking.
+
+See [docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md) for the full report.
 
 ## 13. Known Limitations
 
